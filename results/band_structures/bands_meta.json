@@ -1,0 +1,11 @@
+{
+  "config": {
+    "mode": "TE",
+    "resolution": 8,
+    "fill_fraction": 0.25,
+    "nk": 3,
+    "nbands": 3,
+    "sigma": 0.3
+  },
+  "elapsed_s": 0.18864178499916306
+}
