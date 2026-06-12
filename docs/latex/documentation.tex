@@ -1,0 +1,133 @@
+\documentclass[12pt,a4paper]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[spanish]{babel}
+\usepackage{amsmath,amssymb}
+\usepackage{graphicx}
+\usepackage{hyperref}
+\usepackage{geometry}
+\geometry{margin=2.5cm}
+
+\title{Estructura de Bandas Fotónicas Dispersivas:\\
+Formulación Hermitiana con Campos Auxiliares}
+\author{Implementación Python}
+\date{\today}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+Implementación numérica del método de Raman y Fan para calcular estructuras
+de bandas en cristales fotónicos con materiales dispersivos tipo Drude.
+El problema se formula como $\omega A x = B x$, con $A$ definida positiva y
+$B$ Hermitiana en el caso sin pérdidas. La transformación
+$\hat{H}=A^{-1/2}BA^{-1/2}$ permite resolver un problema estándar de
+autovalores Hermitiano.
+\end{abstract}
+
+\section{Referencia}
+
+El trabajo implementado se basa en Raman y Fan~\cite{Raman2010}, donde se
+introducen campos auxiliares para convertir el problema dispersivo en un
+problema de autovalores lineal.
+
+\section{Modelo Drude}
+
+Para reproducir las figuras principales se usa el caso Drude:
+\begin{equation}
+  \omega_0 = 0, \qquad \omega_p = 1, \qquad \varepsilon_\infty = 1.
+\end{equation}
+
+La permitividad es:
+\begin{equation}
+  \varepsilon(\omega) =
+  \varepsilon_\infty
+  \left(
+    1 + \frac{\omega_p^2}{\omega_0^2 - \omega^2 + i\gamma\omega}
+  \right).
+\end{equation}
+
+\section{Problema Hermitiano}
+
+En el caso sin pérdidas:
+\begin{equation}
+  \omega A x = Bx.
+\end{equation}
+
+Como $A$ es definida positiva, se define:
+\begin{equation}
+  y = A^{1/2}x,
+\end{equation}
+y se obtiene:
+\begin{equation}
+  \omega y = A^{-1/2}BA^{-1/2}y.
+\end{equation}
+
+\section{Caso numérico}
+
+Para la reproducción de la figura de bandas se usan:
+
+\begin{itemize}
+  \item barras cuadradas metálicas en aire;
+  \item lado del cuadrado $s = 0.25a$;
+  \item resolución $20\times20$;
+  \item ruta $\Gamma \rightarrow X$;
+  \item polarización TE.
+\end{itemize}
+
+Para la comparación de pérdidas se usa:
+\begin{equation}
+  \gamma = 0.01\omega_p.
+\end{equation}
+
+\section{Resultados}
+
+Las figuras se generan en la carpeta \texttt{results/}. Si el documento se
+compila después de ejecutar \texttt{make paper}, las figuras se insertan
+automáticamente.
+
+\begin{figure}[htbp]
+  \centering
+  \IfFileExists{../../results/figures/fig1_square_rods_TE_bands.png}{%
+    \includegraphics[width=0.85\textwidth]{../../results/figures/fig1_square_rods_TE_bands.png}%
+  }{%
+    \fbox{\parbox{0.8\textwidth}{\centering Ejecutar \texttt{make paper}}}%
+  }
+  \caption{Estructura de bandas TE para barras cuadradas plasmónicas.}
+\end{figure}
+
+\begin{figure}[htbp]
+  \centering
+  \IfFileExists{../../results/figures/fig2_loss_comparison.png}{%
+    \includegraphics[width=0.85\textwidth]{../../results/figures/fig2_loss_comparison.png}%
+  }{%
+    \fbox{\parbox{0.8\textwidth}{\centering Ejecutar \texttt{make paper}}}%
+  }
+  \caption{Comparación de pérdidas modales: solución exacta no-Hermitiana vs perturbación.}
+\end{figure}
+
+\section{Reproducibilidad}
+
+Ejecución rápida:
+
+\begin{verbatim}
+make smoke
+\end{verbatim}
+
+Reproducción principal:
+
+\begin{verbatim}
+make paper
+\end{verbatim}
+
+CI/CD:
+
+\begin{itemize}
+  \item \texttt{CI}: tests y reproducción pequeña.
+  \item \texttt{Reproduce paper results}: reproducción completa y subida de \texttt{results/} como artifact.
+\end{itemize}
+
+\bibliographystyle{plain}
+\bibliography{bibliography}
+
+\end{document}

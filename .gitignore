@@ -1,57 +1,38 @@
-# Entorno virtual de Python
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.coverage
+htmlcov/
+
+# Virtual environments
 .venv/
 venv/
 env/
 
-# Bytecode y caché
-__pycache__/
-*.py[cod]
-*$py.class
-*.so
-
-# Tests y herramientas
-.pytest_cache/
-.mypy_cache/
-.ruff_cache/
-.coverage
-htmlcov/
-.tox/
-.nox/
-
-# Empaquetado / instalación
-*.egg-info/
-*.egg
-dist/
+# Build artifacts
 build/
-pip-wheel-metadata/
+dist/
+*.egg-info/
 
-# IDEs y editores
-.idea/
-.vscode/
-*.swp
-*.swo
-*~
+# Generated numerical results
+results/
+!results/.gitkeep
 
-# Sistema operativo
+# Generated docs
+docs/latex/*.aux
+docs/latex/*.bbl
+docs/latex/*.blg
+docs/latex/*.log
+docs/latex/*.out
+docs/latex/*.toc
+docs/latex/*.pdf
+
+# OS/editor
 .DS_Store
-Thumbs.db
-
-# Logs y salidas regenerables
-results/logs/
-*.log
-
-# LaTeX (auxiliares; se conserva documentation.pdf si se desea)
-results/latex_doc/*.aux
-results/latex_doc/*.log
-results/latex_doc/*.out
-results/latex_doc/*.blg
-results/latex_doc/*.bbl
-results/latex_doc/*.toc
-results/latex_doc/*.synctex.gz
-
-# Jupyter
-.ipynb_checkpoints/
-
-# Variables de entorno locales
-.env
-.env.*
+.vscode/
+.idea/
