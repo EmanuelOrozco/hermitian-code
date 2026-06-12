@@ -21,7 +21,11 @@ from .perturbation import (
     verify_physical_orthogonality,
 )
 from .utils import banner, kpath_gamma_x, setup_logging, summarize_frequencies
-from .visualization import plot_band_structure, plot_field_intensity, plot_loss_comparison
+from .visualization import (
+    plot_band_structure,
+    plot_field_intensity,
+    plot_loss_comparison,
+)
 
 
 def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
@@ -171,9 +175,7 @@ def compute_loss(config: SimConfig, grid: YeeGrid, solver_cfg: SolverConfig, log
     )
     np.savetxt(out, data, header="omega_real im_exact im_perturb rel_error")
 
-    plot_loss_comparison(
-        cmp, config.output_dir / "figures" / "loss_comparison.png"
-    )
+    plot_loss_comparison(cmp, config.output_dir / "figures" / "loss_comparison.png")
     logger.info(f"Comparación de pérdidas → {out}")
 
 
