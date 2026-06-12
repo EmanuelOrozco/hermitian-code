@@ -1,131 +1,586 @@
-\documentclass[12pt,a4paper]{article}
+\documentclass[11pt,a4paper]{article}
+
+% ============================================================
+% Language, typography, and layout
+% ============================================================
 \usepackage[utf8]{inputenc}
 \usepackage[T1]{fontenc}
-\usepackage[spanish]{babel}
-\usepackage{amsmath,amssymb}
-\usepackage{graphicx}
-\usepackage{hyperref}
-\usepackage{geometry}
-\geometry{margin=2.5cm}
+\usepackage[spanish,es-tabla]{babel}
+\usepackage{lmodern}
+\usepackage{microtype}
+\usepackage[a4paper,margin=2.35cm]{geometry}
 
-\title{Estructura de Bandas Fotónicas Dispersivas:\\
-Formulación Hermitiana con Campos Auxiliares}
-\author{Implementación Python}
+% ============================================================
+% Mathematics
+% ============================================================
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{bm}
+
+% ============================================================
+% Figures, tables, and references
+% ============================================================
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{float}
+\usepackage{subcaption}
+\usepackage{hyperref}
+\usepackage{xcolor}
+\usepackage{siunitx}
+
+\hypersetup{
+  colorlinks=true,
+  linkcolor=blue!55!black,
+  citecolor=blue!55!black,
+  urlcolor=blue!55!black,
+  pdftitle={Estructura de bandas fotonicas de metamateriales dispersivos},
+  pdfauthor={Hermitian photonic bands reproduction},
+  pdfsubject={Hermitian eigenvalue formulation for dispersive photonic crystals},
+  pdfkeywords={photonic bands, dispersive metamaterials, Hermitian eigenvalue problem, Drude model}
+}
+
+% ============================================================
+% Macros
+% ============================================================
+\newcommand{\ii}{\mathrm{i}}
+\newcommand{\dd}{\mathrm{d}}
+\newcommand{\epsinf}{\varepsilon_\infty}
+\newcommand{\omegap}{\omega_p}
+\newcommand{\omegao}{\omega_0}
+\newcommand{\vect}[1]{\bm{#1}}
+\newcommand{\Hhat}{\widehat{H}}
+
+% ============================================================
+% Title
+% ============================================================
+\title{
+  \textbf{Estructura de bandas fotónicas de metamateriales dispersivos}\\[0.35em]
+  \large Reproducción numérica de la formulación Hermitiana de Raman y Fan
+}
+
+\author{
+  Reproducción computacional basada en \textit{Phys. Rev. Lett.} 104, 087401 (2010)
+}
+
 \date{\today}
 
 \begin{document}
+
 \maketitle
 
 \begin{abstract}
-Implementación numérica del método de Raman y Fan para calcular estructuras
-de bandas en cristales fotónicos con materiales dispersivos tipo Drude.
-El problema se formula como $\omega A x = B x$, con $A$ definida positiva y
-$B$ Hermitiana en el caso sin pérdidas. La transformación
-$\hat{H}=A^{-1/2}BA^{-1/2}$ permite resolver un problema estándar de
-autovalores Hermitiano.
+Se presenta una reproducción numérica de la formulación Hermitiana para el
+cálculo de estructuras de bandas fotónicas en metamateriales dispersivos
+propuesta por Raman y Fan. El sistema considerado es una red periódica
+bidimensional de barras cuadradas plasmónicas en aire, descritas por un modelo
+de Drude sin pérdidas para el cálculo de bandas y por un término disipativo
+débil para el análisis modal de pérdidas. La introducción de campos auxiliares
+permite transformar el problema dispersivo en un problema lineal de autovalores.
+En el caso sin pérdidas, dicho problema es Hermitiano y conduce a frecuencias
+reales y modos ortogonales con una norma energética. En el caso disipativo, se
+comparan las pérdidas obtenidas mediante diagonalización no-Hermitiana con la
+predicción perturbativa de primer orden. Los resultados reproducen las
+características principales reportadas para las bandas TE: aparición de bandas
+planas asociadas a modos plasmónicos superficiales, perfiles de campo
+localizados y buena concordancia entre pérdida exacta y perturbativa para
+$\gamma = 0.01\omegap$.
 \end{abstract}
 
-\section{Referencia}
+\tableofcontents
+\newpage
 
-El trabajo implementado se basa en Raman y Fan~\cite{Raman2010}, donde se
-introducen campos auxiliares para convertir el problema dispersivo en un
-problema de autovalores lineal.
+% ============================================================
+\section{Introducción}
+% ============================================================
 
-\section{Modelo Drude}
+Los cristales fotónicos y metamateriales periódicos permiten controlar la
+propagación de ondas electromagnéticas mediante la ingeniería espacial de sus
+propiedades ópticas. En materiales dieléctricos no dispersivos, el cálculo de
+bandas fotónicas se formula como un problema Hermitiano de autovalores. Esta
+estructura matemática garantiza frecuencias reales, ortogonalidad modal y una
+base adecuada para desarrollar análisis espectrales.
 
-Para reproducir las figuras principales se usa el caso Drude:
+En metamateriales plasmónicos y medios dispersivos, la permitividad depende de
+la frecuencia. Por ello, la ecuación estándar para el campo electromagnético ya
+no define directamente un problema lineal de autovalores. La formulación de
+Raman y Fan resuelve esta dificultad introduciendo campos auxiliares asociados
+a los grados de libertad materiales. Con estos campos, la dispersión se absorbe
+en un sistema aumentado con coeficientes independientes de la frecuencia.
+
+El objetivo de este trabajo es reproducir el caso bidimensional de barras
+cuadradas plasmónicas en aire, en la polarización TE, y verificar dos resultados
+principales:
+
+\begin{enumerate}
+  \item la estructura de bandas sin pérdidas obtenida mediante un problema
+        Hermitiano;
+  \item la comparación entre pérdidas modales exactas y pérdidas estimadas por
+        teoría de perturbaciones.
+\end{enumerate}
+
+% ============================================================
+\section{Modelo dispersivo}
+% ============================================================
+
+El material dispersivo se modela mediante una respuesta de Lorentz:
+
 \begin{equation}
-  \omega_0 = 0, \qquad \omega_p = 1, \qquad \varepsilon_\infty = 1.
-\end{equation}
-
-La permitividad es:
-\begin{equation}
-  \varepsilon(\omega) =
-  \varepsilon_\infty
+  \varepsilon(\omega)
+  =
+  \epsinf
   \left(
-    1 + \frac{\omega_p^2}{\omega_0^2 - \omega^2 + i\gamma\omega}
-  \right).
+    1 +
+    \frac{\omegap^2}
+    {
+      \omegao^2 - \omega^2 + \ii\gamma\omega
+    }
+  \right),
+  \label{eq:lorentz}
 \end{equation}
 
-\section{Problema Hermitiano}
+donde $\epsinf$ es la permitividad de alta frecuencia, $\omegap$ es la
+frecuencia de plasma, $\omegao$ es la frecuencia natural del oscilador y
+$\gamma$ representa amortiguamiento.
 
-En el caso sin pérdidas:
+El caso metálico considerado corresponde al límite Drude:
+
 \begin{equation}
-  \omega A x = Bx.
+  \omegao = 0.
 \end{equation}
 
-Como $A$ es definida positiva, se define:
+Para la reproducción numérica se emplean unidades normalizadas tales que
+
 \begin{equation}
-  y = A^{1/2}x,
+  a = 1,
+  \qquad
+  c = 1,
+  \qquad
+  \mu_0 = 1,
+  \qquad
+  \omegap = 1,
 \end{equation}
-y se obtiene:
+
+donde $a$ es la constante de red.
+
+En el metal se toma
+
 \begin{equation}
-  \omega y = A^{-1/2}BA^{-1/2}y.
+  \epsinf = 1,
+  \qquad
+  \omegap = 1,
+  \qquad
+  \omegao = 0.
 \end{equation}
 
-\section{Caso numérico}
+En aire se toma
 
-Para la reproducción de la figura de bandas se usan:
-
-\begin{itemize}
-  \item barras cuadradas metálicas en aire;
-  \item lado del cuadrado $s = 0.25a$;
-  \item resolución $20\times20$;
-  \item ruta $\Gamma \rightarrow X$;
-  \item polarización TE.
-\end{itemize}
-
-Para la comparación de pérdidas se usa:
 \begin{equation}
-  \gamma = 0.01\omega_p.
+  \epsinf = 1,
+  \qquad
+  \omegap = 0,
 \end{equation}
 
+de modo que no existe un grado dispersivo activo en la región no metálica.
+
+% ============================================================
+\section{Campos auxiliares}
+% ============================================================
+
+La respuesta material se describe mediante la polarización $\vect{P}$, cuya
+dinámica satisface
+
+\begin{equation}
+  \frac{\partial^2 \vect{P}}{\partial t^2}
+  +
+  \gamma
+  \frac{\partial \vect{P}}{\partial t}
+  +
+  \omegao^2 \vect{P}
+  =
+  \omegap^2 \epsinf \vect{E}.
+  \label{eq:polarization}
+\end{equation}
+
+Se introduce la velocidad de polarización
+
+\begin{equation}
+  \vect{V}
+  =
+  \frac{\partial \vect{P}}{\partial t}.
+  \label{eq:v_def}
+\end{equation}
+
+Entonces las ecuaciones acopladas de Maxwell y del oscilador material pueden
+escribirse como
+
+\begin{align}
+  \frac{\partial \vect{H}}{\partial t}
+  &=
+  -\frac{1}{\mu_0}\nabla\times\vect{E},
+  \label{eq:h_time}
+  \\
+  \frac{\partial \vect{E}}{\partial t}
+  &=
+  \frac{1}{\epsinf}
+  \left(
+    \nabla\times\vect{H} - \vect{V}
+  \right),
+  \label{eq:e_time}
+  \\
+  \frac{\partial \vect{P}}{\partial t}
+  &=
+  \vect{V},
+  \label{eq:p_time}
+  \\
+  \frac{\partial \vect{V}}{\partial t}
+  &=
+  \omegap^2\epsinf\vect{E}
+  -
+  \omegao^2\vect{P}
+  -
+  \gamma\vect{V}.
+  \label{eq:v_time}
+\end{align}
+
+En el límite Drude, $\omegao=0$, el bloque asociado a $\vect{P}$ puede
+eliminarse del sistema reducido.
+
+% ============================================================
+\section{Formulación Hermitiana}
+% ============================================================
+
+En régimen armónico, el sistema aumentado puede escribirse como
+
+\begin{equation}
+  \omega A x = Bx,
+  \label{eq:generalized_evp}
+\end{equation}
+
+donde $x$ contiene los campos electromagnéticos y auxiliares. En el caso sin
+pérdidas, $\gamma = 0$, la matriz $B$ es Hermitiana y $A$ es Hermitiana definida
+positiva.
+
+Se define el cambio de variable
+
+\begin{equation}
+  y = A^{1/2}x.
+  \label{eq:y}
+\end{equation}
+
+Entonces el problema se transforma en
+
+\begin{equation}
+  \omega y = \Hhat y,
+  \qquad
+  \Hhat = A^{-1/2}BA^{-1/2}.
+  \label{eq:hhat_problem}
+\end{equation}
+
+Como $\Hhat$ es Hermitiana, sus autovalores son reales y sus autovectores
+pueden escogerse ortonormales. En variables físicas, la ortogonalidad modal se
+expresa como
+
+\begin{equation}
+  x_m^\dagger A x_n = \delta_{mn}.
+  \label{eq:orthogonality}
+\end{equation}
+
+Esta norma coincide con la energía total del modo. Para el caso Drude, la
+densidad de energía sin pérdidas puede escribirse como
+
+\begin{equation}
+  W_0
+  =
+  \frac{1}{2}\epsinf |\vect{E}|^2
+  +
+  \frac{1}{2}\mu_0 |\vect{H}|^2
+  +
+  \frac{1}{2\epsinf\omegap^2}
+  |\vect{V}|^2.
+  \label{eq:energy}
+\end{equation}
+
+% ============================================================
+\section{Polarización TE en dos dimensiones}
+% ============================================================
+
+El sistema es bidimensional y uniforme en la dirección $z$. Para la polarización
+TE, el campo magnético tiene componente $H_z$, mientras que el campo eléctrico
+y el campo auxiliar están en el plano:
+
+\begin{equation}
+  x_{\mathrm{TE}}
+  =
+  \left(
+    H_z,\,
+    E_x,\,
+    E_y,\,
+    V_x,\,
+    V_y
+  \right)^T.
+  \label{eq:te_state}
+\end{equation}
+
+Esta es la polarización empleada para la reproducción de la estructura de
+bandas de barras cuadradas plasmónicas.
+
+% ============================================================
+\section{Geometría y parámetros numéricos}
+% ============================================================
+
+La celda unitaria contiene una barra cuadrada metálica centrada en aire. El
+lado de la barra es
+
+\begin{equation}
+  s = 0.25a.
+  \label{eq:side}
+\end{equation}
+
+La ruta de Bloch considerada es $\Gamma \rightarrow X$:
+
+\begin{equation}
+  k_x \in \left[0,\frac{\pi}{a}\right],
+  \qquad
+  k_y = 0.
+\end{equation}
+
+Las frecuencias se reportan en la forma normalizada
+
+\begin{equation}
+  \frac{\omega a}{2\pi c}.
+  \label{eq:normalized_frequency}
+\end{equation}
+
+Los parámetros principales se resumen en la Tabla~\ref{tab:parameters}.
+
+\begin{table}[H]
+  \centering
+  \caption{Parámetros usados en la reproducción numérica.}
+  \label{tab:parameters}
+  \begin{tabular}{lll}
+    \toprule
+    Magnitud & Valor & Descripción \\
+    \midrule
+    $a$ & $1$ & constante de red \\
+    $c$ & $1$ & velocidad de la luz normalizada \\
+    $\mu_0$ & $1$ & permeabilidad normalizada \\
+    $s$ & $0.25a$ & lado de la barra metálica \\
+    $\epsinf$ & $1$ & metal y aire \\
+    $\omegap$ & $1$ & metal \\
+    $\omegap$ & $0$ & aire \\
+    $\omegao$ & $0$ & modelo Drude \\
+    $\gamma$ & $0$ & estructura de bandas sin pérdidas \\
+    $\gamma$ & $0.01\omegap$ & cálculo con pérdidas \\
+    Resolución & $20\times20$ & discretización espacial principal \\
+    Polarización & TE & campos $(H_z,E_x,E_y,V_x,V_y)$ \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+% ============================================================
+\section{Discretización}
+% ============================================================
+
+La celda unitaria se discretiza con una malla de Yee. Esta discretización
+coloca los campos eléctricos y magnéticos en posiciones escalonadas, lo que
+preserva de forma natural la estructura rotacional de las ecuaciones de
+Maxwell.
+
+La periodicidad se incorpora mediante condiciones de Bloch. Para un campo
+$f(\vect{r})$,
+
+\begin{equation}
+  f(x+a,y) = e^{\ii k_x a}f(x,y),
+  \qquad
+  f(x,y+a) = e^{\ii k_y a}f(x,y).
+  \label{eq:bloch}
+\end{equation}
+
+La propiedad discreta central es la relación adjunta entre los operadores de
+rotacional eléctrico y magnético:
+
+\begin{equation}
+  C_H = C_E^\dagger.
+  \label{eq:curl_adjoint}
+\end{equation}
+
+Esta relación garantiza que el operador aumentado sea Hermitiano en ausencia
+de pérdidas.
+
+% ============================================================
+\section{Pérdidas modales}
+% ============================================================
+
+Cuando $\gamma > 0$, el problema deja de ser Hermitiano y las frecuencias
+adquieren parte imaginaria:
+
+\begin{equation}
+  \omega = \omega' + \ii\omega''.
+\end{equation}
+
+Con la convención temporal adoptada, el decaimiento modal corresponde a
+$\omega''<0$. Por ello, la pérdida se representa como $-\operatorname{Im}
+(\omega)$.
+
+La predicción perturbativa de primer orden para el caso Drude es
+
+\begin{equation}
+  \omega_1
+  =
+  -\frac{\ii\gamma}{2}
+  \frac{
+    \displaystyle
+    \int_{\mathrm{metal}}
+    \frac{|\vect{V}_0|^2}{\epsinf\omegap^2}
+    \,\dd \vect{r}
+  }{
+    \displaystyle
+    \int W_0\,\dd \vect{r}
+  }.
+  \label{eq:perturbation}
+\end{equation}
+
+Esta expresión muestra que la pérdida modal es proporcional a la fracción de
+energía almacenada en el grado mecánico dispersivo.
+
+% ============================================================
 \section{Resultados}
+% ============================================================
 
-Las figuras se generan en la carpeta \texttt{results/}. Si el documento se
-compila después de ejecutar \texttt{make paper}, las figuras se insertan
-automáticamente.
+\subsection{Estructura de bandas TE}
 
-\begin{figure}[htbp]
+La Figura~\ref{fig:bands} muestra la estructura de bandas TE para barras
+cuadradas plasmónicas en aire. Se observan bandas relativamente planas en
+rangos de frecuencia asociados a modos plasmónicos superficiales. Esta es una
+de las firmas principales del sistema dispersivo: la respuesta del metal
+introduce resonancias locales que generan bandas con baja dispersión.
+
+\begin{figure}[H]
   \centering
-  \IfFileExists{../../results/figures/fig1_square_rods_TE_bands.png}{%
-    \includegraphics[width=0.85\textwidth]{../../results/figures/fig1_square_rods_TE_bands.png}%
-  }{%
-    \fbox{\parbox{0.8\textwidth}{\centering Ejecutar \texttt{make paper}}}%
-  }
-  \caption{Estructura de bandas TE para barras cuadradas plasmónicas.}
+  \includegraphics[width=0.92\textwidth]{../../results/figures/fig1_square_rods_TE_bands.png}
+  \caption{Estructura de bandas TE para barras cuadradas plasmónicas en aire.
+  La ruta de Bloch es $\Gamma\rightarrow X$ y la frecuencia se reporta como
+  $\omega a/2\pi c$.}
+  \label{fig:bands}
 \end{figure}
 
-\begin{figure}[htbp]
+\subsection{Perfiles de campo}
+
+Las Figuras~\ref{fig:field_mode0} y~\ref{fig:field_mode4} muestran perfiles
+espaciales representativos de los modos en el punto $\Gamma$. Se presentan
+componentes del campo eléctrico y del campo auxiliar de velocidad de
+polarización. La comparación entre $E_x$ y $V_x$ permite identificar qué modos
+concentran mayor energía en el material dispersivo.
+
+\begin{figure}[H]
   \centering
-  \IfFileExists{../../results/figures/fig2_loss_comparison.png}{%
-    \includegraphics[width=0.85\textwidth]{../../results/figures/fig2_loss_comparison.png}%
-  }{%
-    \fbox{\parbox{0.8\textwidth}{\centering Ejecutar \texttt{make paper}}}%
-  }
-  \caption{Comparación de pérdidas modales: solución exacta no-Hermitiana vs perturbación.}
+  \includegraphics[width=0.86\textwidth]{../../results/field_profiles/fig1_TE_mode0_Gamma.png}
+  \caption{Perfil espacial del modo TE 0 en $\Gamma$, normalizado por energía
+  total.}
+  \label{fig:field_mode0}
 \end{figure}
 
-\section{Reproducibilidad}
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.86\textwidth]{../../results/field_profiles/fig1_TE_mode4_Gamma.png}
+  \caption{Perfil espacial de un modo TE adicional en $\Gamma$. La intensidad
+  del campo auxiliar permite estimar cualitativamente la pérdida modal.}
+  \label{fig:field_mode4}
+\end{figure}
 
-Ejecución rápida:
+\subsection{Pérdida exacta y perturbativa}
 
-\begin{verbatim}
-make smoke
-\end{verbatim}
+La Figura~\ref{fig:loss} compara la pérdida modal obtenida por diagonalización
+no-Hermitiana con la predicción de primer orden. Para
+$\gamma=0.01\omegap$, ambos métodos muestran buena concordancia. La mayor
+pérdida aparece en regiones espectrales donde los modos presentan mayor
+carácter plasmónico y, por tanto, mayor participación del campo auxiliar
+$\vect{V}$.
 
-Reproducción principal:
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.86\textwidth]{../../results/figures/fig2_loss_comparison.png}
+  \caption{Comparación entre pérdida modal exacta y pérdida calculada mediante
+  teoría de perturbaciones de primer orden para $\gamma=0.01\omegap$.}
+  \label{fig:loss}
+\end{figure}
 
-\begin{verbatim}
-make paper
-\end{verbatim}
+\subsection{Validez perturbativa}
 
-CI/CD:
+La Figura~\ref{fig:perturbation_gamma} muestra el error relativo entre el
+método exacto y el método perturbativo para diferentes valores de $\gamma$.
+Como se espera para una expansión de primer orden, la aproximación mejora al
+disminuir la intensidad de la pérdida.
 
-\begin{itemize}
-  \item \texttt{CI}: tests y reproducción pequeña.
-  \item \texttt{Reproduce paper results}: reproducción completa y subida de \texttt{results/} como artifact.
-\end{itemize}
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.86\textwidth]{../../results/figures/perturbation_vs_gamma.png}
+  \caption{Error relativo entre la pérdida exacta y la pérdida perturbativa
+  para diferentes valores de $\gamma$.}
+  \label{fig:perturbation_gamma}
+\end{figure}
+
+\subsection{Convergencia espacial}
+
+La Figura~\ref{fig:convergence} muestra la convergencia espacial de una
+frecuencia representativa al refinar la malla. La reducción del error relativo
+con la resolución confirma que las cantidades calculadas convergen hacia un
+valor estable al aumentar el número de puntos por celda.
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.78\textwidth]{../../results/figures/convergence_test.png}
+  \caption{Convergencia espacial de la frecuencia fundamental respecto a la
+  resolución de la malla.}
+  \label{fig:convergence}
+\end{figure}
+
+% ============================================================
+\section{Discusión}
+% ============================================================
+
+Los resultados reproducen los elementos físicos centrales del caso estudiado
+por Raman y Fan. La formulación Hermitiana permite obtener una estructura de
+bandas real en el caso sin pérdidas, aun cuando el material sea dispersivo. La
+presencia de bandas planas indica modos con fuerte localización asociada a la
+respuesta plasmónica del metal.
+
+Los perfiles de campo muestran que la intensidad del campo auxiliar no es
+uniforme entre modos. Esta observación es fundamental para entender la pérdida:
+dos modos con frecuencias similares pueden tener pérdidas distintas si almacenan
+fracciones diferentes de su energía en el grado material dispersivo.
+
+La comparación entre el cálculo exacto no-Hermitiano y la teoría de
+perturbaciones confirma que, para pérdidas débiles, la base modal lossless
+proporciona una descripción cuantitativa de la disipación. En particular, la
+corrección perturbativa predice correctamente que la pérdida escala con la
+energía cinética del oscilador material.
+
+% ============================================================
+\section{Conclusiones}
+% ============================================================
+
+Se reprodujo numéricamente la formulación Hermitiana para bandas fotónicas en
+un metamaterial dispersivo de tipo Drude. La introducción del campo auxiliar
+$\vect{V}$ permite linealizar la dependencia en frecuencia y obtener un
+problema Hermitiano en ausencia de pérdidas.
+
+Para barras cuadradas plasmónicas en aire se obtuvo una estructura de bandas TE
+con bandas planas asociadas a modos plasmónicos superficiales. Al introducir
+una pérdida débil $\gamma=0.01\omegap$, la parte imaginaria de las frecuencias
+calculada mediante diagonalización no-Hermitiana concuerda con la predicción
+perturbativa de primer orden.
+
+Estos resultados confirman que la formulación Hermitiana no solo permite
+calcular bandas de medios dispersivos, sino que también proporciona una base
+ortonormal físicamente significativa para analizar pérdidas modales.
+
+% ============================================================
+\section*{Referencia principal}
+% ============================================================
+
+El desarrollo teórico reproducido en este documento se basa en el trabajo de
+Raman y Fan~\cite{Raman2010}.
 
 \bibliographystyle{plain}
 \bibliography{bibliography}
