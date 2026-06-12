@@ -19,12 +19,15 @@ from src.grid import YeeGrid
 from src.hermitian_solver import solve_hermitian, solve_nonhermitian
 from src.operators import assemble_systems
 from src.perturbation import compare_loss_methods, compute_all_perturbative
+from src.reproduction import paper_units_to_omega
 from src.utils import setup_logging
 
 
 def main() -> None:
     logger = setup_logging()
-    gammas = [0.001, 0.005, 0.01, 0.02]
+    gamma_factors = [0.001, 0.005, 0.01, 0.02]
+    omega_p = float(paper_units_to_omega(1.0))
+    gammas = [g * omega_p for g in gamma_factors]
 
     config = SimConfig(
         mode=Polarization.TE,
@@ -32,14 +35,14 @@ def main() -> None:
         fill_fraction=0.25,
         shape=GeometryShape.SQUARE,
         eps_inf_metal=1.0,
-        omega_p_metal=1.0,
+        omega_p_metal=omega_p,
         omega_0_metal=0.0,
         eps_inf_air=1.0,
         omega_p_air=0.0,
         omega_0_air=1.0e12,
         nk=40,
         nbands=35,
-        sigma=0.35,
+        sigma=paper_units_to_omega(0.35),
         output_dir=ROOT / "results",
         solver_tol=1e-9,
         solver_maxiter=2500,
@@ -84,7 +87,8 @@ def main() -> None:
                 ]
             )
 
-        ax.plot(omega, err, "o-", label=rf"$\gamma={gamma}\omega_p$", ms=3)
+        gamma_factor = gamma / omega_p
+        ax.plot(omega, err, "o-", label=rf"$\gamma={gamma_factor:g}\omega_p$", ms=3)
 
         logger.info(
             f"gamma={gamma}: mean error={np.nanmean(err):.3e}, "
@@ -118,7 +122,9 @@ def main() -> None:
 
     meta = {
         "case": "perturbation_vs_gamma",
-        "gammas": gammas,
+        "gamma_over_omega_p": gamma_factors,
+        "gammas_internal": gammas,
+        "omega_p_internal": omega_p,
         "mode": config.mode.value,
         "resolution": config.resolution,
         "square_side_over_a": config.fill_fraction,

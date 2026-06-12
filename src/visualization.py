@@ -27,6 +27,9 @@ def plot_band_structure(
     title: str = "TE band structure — square plasmonic rods",
     ylabel: str = r"Frequency $\omega a / 2\pi c$",
     convert_to_paper_units: bool = True,
+    marker_only: bool = False,
+    ylim: tuple[float, float] | None = None,
+    paper_style: bool = False,
 ) -> None:
     """Grafica estructura de bandas.
 
@@ -35,17 +38,36 @@ def plot_band_structure(
     """
     y = bands / (2.0 * np.pi) if convert_to_paper_units else bands
 
-    fig, ax = plt.subplots(figsize=(7.2, 5.2))
+    fig_size = (4.4, 4.1) if paper_style else (7.2, 5.2)
+    fig, ax = plt.subplots(figsize=fig_size)
 
-    for n in range(y.shape[1]):
-        ax.plot(k_norm, y[:, n], "-", lw=0.8, alpha=0.9)
+    band_color = "#5b3a22" if paper_style else None
+    band_lw = 0.9 if paper_style else 0.8
 
-    ax.set_xlabel(r"Wave vector $k_x / (\pi/a)$")
+    if marker_only:
+        kk = np.repeat(k_norm[:, None], y.shape[1], axis=1)
+        mask = np.isfinite(y)
+        ax.plot(kk[mask], y[mask], ".", ms=2.4, alpha=0.85, color=band_color)
+    else:
+        for n in range(y.shape[1]):
+            ax.plot(k_norm, y[:, n], "-", lw=band_lw, alpha=0.95, color=band_color)
+
+    ax.set_xlabel("Wave vector k" if paper_style else r"Wave vector $k_x / (\pi/a)$")
     ax.set_ylabel(ylabel)
-    ax.set_title(title)
+    if not paper_style:
+        ax.set_title(title)
     ax.set_xlim(float(np.nanmin(k_norm)), float(np.nanmax(k_norm)))
-    ax.set_ylim(bottom=0.0)
-    ax.grid(True, alpha=0.25)
+    if paper_style:
+        ax.set_xticks([float(np.nanmin(k_norm)), float(np.nanmax(k_norm))])
+        ax.set_xticklabels([r"$\Gamma$", "X"])
+    if ylim is None:
+        ax.set_ylim(bottom=0.0)
+    else:
+        ax.set_ylim(*ylim)
+    if paper_style:
+        ax.grid(False)
+    else:
+        ax.grid(True, alpha=0.25)
 
     _save_fig(output)
 
@@ -104,6 +126,7 @@ def plot_loss_comparison(
     output: Path,
     title: str = r"Modal loss, TE case: $\gamma = 0.01\omega_p$",
     convert_to_paper_units: bool = True,
+    paper_style: bool = False,
 ) -> None:
     """Figura tipo Fig. 2: Im[ω] vs Re[ω].
 
@@ -118,22 +141,44 @@ def plot_loss_comparison(
         im_ex = im_ex / (2.0 * np.pi)
         im_pt = im_pt / (2.0 * np.pi)
         xlabel = r"Real frequency $\omega'a/2\pi c$"
-        ylabel = r"Imaginary frequency $-\omega''a/2\pi c$"
+        ylabel = r"Modal loss $|\mathrm{Im}(\omega)|a/2\pi c$"
     else:
         xlabel = r"Re[$\omega$]"
         ylabel = r"$-\mathrm{Im}[\omega]$"
 
-    fig, ax = plt.subplots(figsize=(7.0, 4.8))
+    fig_size = (4.8, 3.3) if paper_style else (7.0, 4.8)
+    fig, ax = plt.subplots(figsize=fig_size)
 
-    ax.plot(omega, im_ex, "o", ms=4, label="Exact non-Hermitian")
-    ax.plot(omega, im_pt, "x", ms=5, label="Perturbation theory")
+    if paper_style:
+        ax.plot(omega, im_pt, "+", ms=4.2, mew=0.8, color="#315aa6", label="Perturbation Result")
+        ax.plot(
+            omega,
+            im_ex,
+            "o",
+            ms=4.0,
+            mfc="none",
+            mec="#b4443e",
+            mew=0.8,
+            label="Exact Result",
+        )
+    else:
+        ax.plot(omega, im_ex, "o", ms=4, label="Exact non-Hermitian")
+        ax.plot(omega, im_pt, "x", ms=5, label="Perturbation theory")
 
     ax.set_xlabel(xlabel)
     ax.set_ylabel(ylabel)
-    ax.set_title(title)
-    ax.legend()
-    ax.grid(True, alpha=0.25)
+    if not paper_style:
+        ax.set_title(title)
+    if paper_style:
+        ax.legend(loc="upper left", frameon=False, fontsize=8, handlelength=1.0)
+        ax.grid(False)
+    else:
+        ax.legend()
+        ax.grid(True, alpha=0.25)
     ax.set_ylim(bottom=0.0)
+    if paper_style:
+        ax.set_xlim(left=0.0, right=max(1.15, float(np.nanmax(omega)) if omega.size else 1.15))
+        ax.set_ylim(0.0, max(0.0051, float(np.nanmax([im_ex, im_pt])) * 1.04))
 
     _save_fig(output)
 

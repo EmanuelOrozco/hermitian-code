@@ -17,6 +17,7 @@ from src.constants import GeometryShape, Polarization, SimConfig, SolverConfig
 from src.grid import YeeGrid
 from src.hermitian_solver import solve_hermitian
 from src.operators import assemble_systems
+from src.reproduction import paper_units_to_omega
 from src.utils import setup_logging
 from src.visualization import plot_convergence
 
@@ -30,20 +31,21 @@ def main() -> None:
     t0 = time.perf_counter()
 
     for n in resolutions:
+        omega_p = float(paper_units_to_omega(1.0))
         config = SimConfig(
             mode=Polarization.TE,
             resolution=n,
             fill_fraction=0.25,
             shape=GeometryShape.SQUARE,
             eps_inf_metal=1.0,
-            omega_p_metal=1.0,
+            omega_p_metal=omega_p,
             omega_0_metal=0.0,
             eps_inf_air=1.0,
             omega_p_air=0.0,
             omega_0_air=1.0e12,
             nk=1,
             nbands=8,
-            sigma=0.35,
+            sigma=paper_units_to_omega(0.35),
             output_dir=ROOT / "results",
             solver_tol=1e-9,
             solver_maxiter=2500,

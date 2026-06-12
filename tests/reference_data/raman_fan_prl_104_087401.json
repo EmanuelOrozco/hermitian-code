@@ -1,0 +1,23 @@
+{
+  "source_pdf": "/Users/mcs/Downloads/PhysRevLett.104.087401 (1).pdf",
+  "paper": "A. Raman and S. Fan, Phys. Rev. Lett. 104, 087401 (2010)",
+  "figure_1": {
+    "mode": "TE",
+    "geometry": "2D square plasmonic rods in air",
+    "square_side_over_a": 0.25,
+    "resolution": [20, 20],
+    "k_path": "Gamma-X",
+    "x_range_k_over_pi": [0.0, 1.0],
+    "y_range_omega_a_over_2pi_c": [0.0, 1.1],
+    "required_frequency_windows": [
+      [0.45, 0.55],
+      [0.95, 1.05]
+    ]
+  },
+  "figure_2": {
+    "gamma_over_omega_p": 0.01,
+    "required_frequency_span_min": 0.8,
+    "relative_error_loss_floor": 0.0001,
+    "max_relative_error_exact_vs_perturbative": 0.05
+  }
+}

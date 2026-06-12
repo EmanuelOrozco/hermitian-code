@@ -19,13 +19,14 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: "3.11"
-          cache: pip
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v5
 
       - name: Install Python dependencies
         run: |
-          python -m pip install --upgrade pip
-          python -m pip install -r requirements.txt
-          python -m pip install -e .
+          uv venv
+          uv pip install -r requirements.txt -e .
 
       - name: Install LaTeX dependencies
         run: |
@@ -35,23 +36,23 @@ jobs:
             texlive-latex-recommended \
             texlive-latex-extra \
             texlive-fonts-recommended \
-            texlive-bibtex-extra
+            texlive-bibtex-extra \
+            texlive-lang-spanish \
+            texlive-science \
+            latexmk
 
       - name: Run tests
         run: |
-          pytest tests/ -v
+          uv run pytest tests/ -v
 
       - name: Generate reproduction results
         run: |
-          python scripts/run_reproduction.py --profile paper
+          uv run python scripts/run_reproduction.py --profile publication
 
       - name: Build reproduction PDF
         run: |
           cd docs/latex
-          pdflatex -interaction=nonstopmode documentation.tex
-          bibtex documentation
-          pdflatex -interaction=nonstopmode documentation.tex
-          pdflatex -interaction=nonstopmode documentation.tex
+          latexmk -pdf -interaction=nonstopmode -halt-on-error documentation.tex
           mkdir -p ../../results/docs
           cp documentation.pdf ../../results/docs/reproduction_report.pdf
 

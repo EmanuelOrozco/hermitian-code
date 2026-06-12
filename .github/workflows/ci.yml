@@ -24,21 +24,22 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
-          cache: pip
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v5
 
       - name: Install dependencies
         run: |
-          python -m pip install --upgrade pip
-          python -m pip install -r requirements.txt
-          python -m pip install -e .
+          uv venv
+          uv pip install -r requirements.txt -e .
 
       - name: Run tests
         run: |
-          pytest tests/ -v
+          uv run pytest tests/ -v
 
       - name: Generate smoke results
         run: |
-          python scripts/run_reproduction.py --profile smoke
+          uv run python scripts/run_reproduction.py --profile smoke
 
       - name: Upload smoke results
         uses: actions/upload-artifact@v4
